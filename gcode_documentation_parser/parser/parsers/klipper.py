@@ -113,53 +113,47 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
         """Heading text without the pilcrow link."""
         return tag.find(string=True, recursive=False) or tag.get_text().strip()
 
+    def _brief_from_paragraph(self, p):
+        """Extract description text after the colon in a paragraph."""
+        text = p.get_text().replace('\n', ' ').strip()
+        colon_idx = text.find(':')
+        return text[colon_idx + 1:].strip() if colon_idx != -1 else text
+
+    def _match_syntax(self, syntax, heading_text):
+        """Return (match, params_text) for a syntax string, falling back to heading."""
+        m = self.re_reprap.match(syntax) or self.re_klipper.match(syntax)
+        if m:
+            return m, m.group(2)
+        m = self.re_reprap.match(heading_text) or self.re_klipper.match(heading_text)
+        return m, None
+
     def _parse_h4_command(self, h4, section_title):
         """Parse a single h4 command block."""
         heading_text = self._heading_text(h4).strip()
         anchor = h4.get('id', '')
 
-        # Find the next <p> sibling that starts with a <code> block
         p = h4.find_next_sibling('p')
         if not p:
             return None
-
         first_code = p.find('code')
         if not first_code:
             return None
 
         syntax = first_code.get_text().replace('\n', ' ').strip()
-
-        # Description: full paragraph text after the code block
-        full_p_text = p.get_text().replace('\n', ' ').strip()
-        colon_idx = full_p_text.find(':')
-        if colon_idx != -1:
-            brief = full_p_text[colon_idx + 1:].strip()
-        else:
-            brief = full_p_text
-
-        m = self.re_reprap.match(syntax) or self.re_klipper.match(syntax)
+        m, params_text = self._match_syntax(syntax, heading_text)
         if not m:
-            # Heading text may be the cleaner command name
-            m = (self.re_reprap.match(heading_text)
-                 or self.re_klipper.match(heading_text))
-            if not m:
-                return None
-            code = m.group(1)
-            params_text = None
-        else:
-            code = m.group(1)
-            params_text = m.group(2)
+            return None
 
+        code = m.group(1)
         if self.re_reprap.match(syntax):
             parameters = self.parse_reprap_parameters(params_text)
         else:
             parameters = self.parse_klipper_parameters(params_text)
 
         title = section_title if section_title else heading_text
-
         return (code, [{
             "title": title,
-            "brief": brief,
+            "brief": self._brief_from_paragraph(p),
             "codes": [code],
             "related": [],
             "parameters": parameters,
