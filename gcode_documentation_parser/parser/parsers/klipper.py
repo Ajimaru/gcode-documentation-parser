@@ -48,7 +48,8 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
             return {}
         codes = {}
         for li in h2.find_all_next('li'):
-            if li.find_parent('h2') and li.find_parent('h2').get('id') == 'additional-commands':
+            parent_h2 = li.find_parent('h2')
+            if parent_h2 and parent_h2.get('id') == 'additional-commands':
                 break
             first_code = li.find('code')
             if not first_code:
@@ -139,7 +140,8 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
         m = self.re_reprap.match(syntax) or self.re_klipper.match(syntax)
         if not m:
             # Heading text may be the cleaner command name
-            m = self.re_reprap.match(heading_text) or self.re_klipper.match(heading_text)
+            m = (self.re_reprap.match(heading_text)
+                 or self.re_klipper.match(heading_text))
             if not m:
                 return None
             code = m.group(1)
