@@ -170,6 +170,7 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
     # -- Parameter parsers (unchanged) ----------------------------------------
 
     def parse_reprap_parameters(self, parameters_text):
+        """Parse RepRap-style space-separated parameters from a syntax string."""
         if not parameters_text:
             return []
         parameter_texts = map(str.strip, parameters_text.split(" "))
@@ -177,6 +178,7 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
             self.parse_reprap_parameter, parameter_texts)))
 
     def parse_reprap_parameter(self, parameter_text):
+        """Parse a single RepRap parameter token into a parameter dict."""
         if not parameter_text:
             return None
         optional = (
@@ -206,6 +208,7 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
         }
 
     def parse_klipper_parameters(self, parameters_text):
+        """Parse Klipper-style space-separated parameters from a syntax string."""
         if not parameters_text:
             return []
         parameter_texts = map(str.strip, parameters_text.split(" "))
@@ -213,6 +216,7 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
             self.parse_klipper_parameter, parameter_texts)))
 
     def parse_klipper_parameter(self, parameter_text):
+        """Parse a single Klipper parameter token into a parameter dict."""
         if not parameter_text:
             return None
         optional = (
