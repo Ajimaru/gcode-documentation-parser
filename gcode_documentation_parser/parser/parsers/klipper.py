@@ -221,25 +221,28 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
         `[MOVE=1 [MOVE_SPEED=<speed>]]`), which leaves a stray bracket behind
         once the syntax is split on whitespace.
         """
-        opens = parameter_text.count('[')
-        closes = parameter_text.count(']')
-        if opens == closes:
-            if parameter_text.startswith('[') and parameter_text.endswith(']'):
-                depth = 0
-                for index, character in enumerate(parameter_text):
-                    if character == '[':
-                        depth += 1
-                    elif character == ']':
-                        depth -= 1
-                        if depth == 0:
-                            if index == len(parameter_text) - 1:
-                                return parameter_text[1:-1], True, True
-                            # Several bracketed parameters run together, as
-                            # the documentation occasionally omits the space
-                            # between them.
-                            return parameter_text, True, False
+        if parameter_text.count('[') != parameter_text.count(']'):
+            return parameter_text, True, False
+        if not (parameter_text.startswith('[')
+                and parameter_text.endswith(']')):
             return parameter_text, False, False
+        if self._closes_at_end(parameter_text):
+            return parameter_text[1:-1], True, True
+        # Several bracketed parameters run together, as the documentation
+        # occasionally omits the space between them.
         return parameter_text, True, False
+
+    def _closes_at_end(self, parameter_text):
+        """Whether the opening bracket is closed only by the last one."""
+        depth = 0
+        for index, character in enumerate(parameter_text):
+            if character == '[':
+                depth += 1
+            elif character == ']':
+                depth -= 1
+                if depth == 0:
+                    return index == len(parameter_text) - 1
+        return False
 
     def parse_reprap_parameter(self, parameter_text):
         """Parse a single RepRap parameter token into a parameter dict."""
