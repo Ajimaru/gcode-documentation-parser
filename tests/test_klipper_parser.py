@@ -18,6 +18,9 @@ DOCUMENT = """
 <li>Dwell: <code>G4 P&lt;milliseconds&gt;</code></li>
 <li><code>G10</code>: Retracts the extruder.</li>
 <li>Not a gcode: <code>max_velocity</code></li>
+<li>Turn off motors: <code>M18</code> or <code>M84</code></li>
+<li>Force relative distances: <code>M83</code>, <code>M82</code><ul>
+<li>Note: <code>M83</code> forces relative coordinates.</li></ul></li>
 </ul>
 <h3 id="virtual_sdcard">[virtual_sdcard]</h3>
 <ul><li>List SD card: <code>M20</code></li></ul>
@@ -36,7 +39,21 @@ def parse(html):
 
 def test_both_sections_are_parsed():
     assert set(parse(DOCUMENT)) == {
-        "G4", "G10", "M20", "BED_MESH_OUTPUT", "SAVE_CONFIG"}
+        "G4", "G10", "M18", "M84", "M82", "M83", "M20",
+        "BED_MESH_OUTPUT", "SAVE_CONFIG"}
+
+
+def test_one_item_can_document_several_commands():
+    # eg `Turn off motors: <code>M18</code> or <code>M84</code>`
+    codes = parse(DOCUMENT)
+    assert codes["M18"][0]["title"] == "Turn off motors"
+    assert codes["M84"][0]["title"] == "Turn off motors"
+    assert codes["M84"][0]["codes"] == ["M84"]
+
+
+def test_a_nested_note_is_not_a_command_of_its_own():
+    # The "Note:" sub-bullet mentions M83 again; it must not add an entry.
+    assert len(parse(DOCUMENT)["M83"]) == 1
 
 
 def test_entries_have_the_expected_shape():

@@ -50,14 +50,18 @@ class KlipperGcodeDocumentationParser(BaseDocumentationParser):
             return {}
         codes = {}
         for li in h2.find_all_next('li'):
-            first_code = li.find('code')
-            if not first_code:
+            # A nested list holds a note about the command it sits under,
+            # rather than a command of its own.
+            if li.find_parent('li'):
                 continue
-            code_text = first_code.get_text().replace('\n', ' ').strip()
-            parsed = self._try_parse_standard_code(code_text, li)
-            if parsed:
-                key, entry = parsed
-                codes.setdefault(key, []).extend(entry)
+            # One item can document several commands, as in
+            # `Turn off motors: <code>M18</code> or <code>M84</code>`.
+            for code_tag in li.find_all('code', recursive=False):
+                code_text = " ".join(code_tag.get_text().split())
+                parsed = self._try_parse_standard_code(code_text, li)
+                if parsed:
+                    key, entry = parsed
+                    codes.setdefault(key, []).extend(entry)
         return codes
 
     def _try_parse_standard_code(self, code_text, li):
